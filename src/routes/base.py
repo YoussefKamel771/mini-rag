@@ -1,7 +1,6 @@
-from fastapi import FastAPI, APIRouter
-from dotenv import load_dotenv
+from fastapi import FastAPI, APIRouter, Depends
+from helpers.config import Settings, get_settings
 import os
-load_dotenv()
 
 base_router = APIRouter(
     prefix="/api/v1",
@@ -10,7 +9,7 @@ base_router = APIRouter(
 
 
 @base_router.get("/")
-async def welcome():
-    app_name = os.getenv("APP_NAME")
-    app_version = os.getenv("APP_VERSION")
+async def welcome(settings: Settings = Depends(get_settings)):
+    app_name = settings.APP_NAME
+    app_version = settings.APP_VERSION
     return {"message": f"Healthy {app_name} v{app_version} API"}
