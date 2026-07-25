@@ -4,6 +4,6 @@ from typing import List, Optional
 class ProcessRequest(BaseModel):
     file_id: str
     chunk_size: Optional[int] = 100
-    overlab: Optional[int] = 20
+    chunk_overlap: Optional[int] = 20
     do_reset: Optional[int] = 0
      
