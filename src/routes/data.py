@@ -2,8 +2,7 @@ from fastapi import FastAPI, APIRouter, Depends, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 from helpers.config import Settings, get_settings
 from controllers import DataController, ProjectController, ProcessController
-from models import ResponseSignal, ProjectModel, DataChunk, ChunkModel
-from models.ChunkModel import ChunkModel
+from models import ResponseSignal, ProjectModel, DataChunk, ChunkModel, AssetModel, AssetTypeEnum, Asset
 from .schemas.data import ProcessRequest
 import os
 import aiofiles
@@ -51,12 +50,25 @@ async def upload_data(request: Request, project_id: str, file: UploadFile,
             status_code=status.HTTP_400_BAD_REQUEST, 
             content={"message": ResponseSignal.FILE_UPLOAD_FAILED.value})
 
+    # store the assets into the database
+    asset_model = await AssetModel.create_instance(
+        db_client=request.app.state.database
+    )
+
+    asset_resource = Asset(
+        asset_project_id=project.id,
+        asset_type=AssetTypeEnum.FILE.value,
+        asset_name=file_id,
+        asset_size=os.path.getsize(file_path)
+    )
+
+    asset_record = await asset_model.create_asset(asset=asset_resource)
+
     return JSONResponse(
         status_code=status.HTTP_200_OK, 
         content={
             "message": ResponseSignal.FILE_UPLOAD_SUCCESS.value,
-            "file_id": file_id,
-            # "project_id": str(project.id)
+            "file_id": str(asset_record.id),
             }
     )
 
