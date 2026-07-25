@@ -21,7 +21,7 @@ data_router = APIRouter(
 async def upload_data(request: Request, project_id: str, file: UploadFile, 
                       app_settings: Settings = Depends(get_settings)):
     
-    project_model = ProjectModel(db_client=request.app.state.database)
+    project_model = await ProjectModel.create_instance(db_client=request.app.state.database)
 
     project = await project_model.get_project_or_create_one(project_id=project_id)
     
@@ -69,9 +69,7 @@ async def process_data(request: Request, project_id: str, process_request: Proce
     chunk_overlap = process_request.chunk_overlap
     do_reset = process_request.do_reset
 
-    project_model = ProjectModel(
-        db_client=request.app.state.database
-    )
+    project_model = await ProjectModel.create_instance(db_client=request.app.state.database)
 
     project = await project_model.get_project_or_create_one(
         project_id=project_id
@@ -113,9 +111,7 @@ async def process_data(request: Request, project_id: str, process_request: Proce
         for i, chunk in enumerate(file_chunks)
     ]
 
-    chunk_model = ChunkModel(
-        db_client=request.app.state.database
-    )
+    chunk_model = await ChunkModel.create_instance(db_client=request.app.state.database)
 
     if do_reset == 1:
         _ = await chunk_model.delete_chunks_by_project_id(
