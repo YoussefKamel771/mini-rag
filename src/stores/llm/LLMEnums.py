@@ -1,6 +1,6 @@
 from enum import Enum
 
-class LLMType(str, Enum):
+class LLMEnums(Enum):
     OPENAI = "openai"
     COHERE = "cohere"
 
@@ -8,3 +8,15 @@ class OpenAIEnums(Enum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
+
+class COHEREEnums(Enum):
+    SYSTEM = "SYSTEM"
+    USER = "USER"
+    ASSISTANT = "CHATBOT"  
+
+    DOCUMENT = "search_document"
+    QUERY = "search_query"
+
+class DocumentTypeEnums(str, Enum):
+    QUERY = "query"
+    DOCUMENT = "document"
