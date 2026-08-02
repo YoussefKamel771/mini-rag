@@ -83,9 +83,23 @@ class CoHereProvider(LLMInterface):
                 embedding_types=['float']
             )   
     
-            if not response or not response.embeddings  or not response.embeddings.float :
+            # if not response or not hasattr(response, "embeddings")  or not response.embeddings.float :
+            #     self.logger.error("No embedding data returned from Cohere.")
+            #     return None
+    
+            try:
+                float_embeddings = response.embeddings.float
+            except AttributeError:
                 self.logger.error("No embedding data returned from Cohere.")
                 return None
-    
+
+            if not float_embeddings:
+                self.logger.error("No embedding data returned from Cohere.")
+                return None
             return response.embeddings.float[0]
-    
+
+    def construct_prompt(self, prompt: str, role: str):
+        return {
+            "role": role,
+            "text": self.process_text(prompt)
+        }
