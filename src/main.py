@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from routes import data, base, nlp
 from stores.llm import LLMProviderFactory
 from stores.vectordb import VectorDBProviderFactory
+from stores import TemplateParser
 from motor.motor_asyncio import AsyncIOMotorClient
 from helpers.config import get_settings
 from contextlib import asynccontextmanager
@@ -31,6 +32,11 @@ async def lifespan(app: FastAPI):
     # Vector DB client
     app.state.vectordb_client = vector_db_provider_factory.create(settings.VECTOR_DB_BACKEND)
     app.state.vectordb_client.connect()    
+
+    app.state.template_parser = TemplateParser(
+        language=settings.PRIMARY_LANG,
+        default_language=settings.DEFAULT_LANG,
+    )
 
 
     yield  # This is where the application "lives" and handles requests
