@@ -37,6 +37,7 @@ async def index_project(request: Request, project_id: str, push_request: PushReq
         vectordb_client=request.app.state.vectordb_client,
         generation_client=request.app.state.generation_client,
         embedding_client=request.app.state.embedding_client,
+        template_parser=request.app.state.template_parser
     )
 
     has_records = True
@@ -91,6 +92,7 @@ async def get_project_index_info(request: Request, project_id: str):
         vectordb_client=request.app.state.vectordb_client,
         generation_client=request.app.state.generation_client,
         embedding_client=request.app.state.embedding_client,
+        template_parser=request.app.state.template_parser
     )
 
     collection_info = nlp_controller.get_vector_db_collection_info(project=project)
