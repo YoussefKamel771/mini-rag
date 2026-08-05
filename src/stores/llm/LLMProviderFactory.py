@@ -13,8 +13,8 @@ class LLMProviderFactory:
                 api_url = self.config.OPENAI_API_URL,
                 default_input_max_characters=self.config.INPUT_DAFAULT_MAX_CHARACTERS,
                 default_generation_max_output_tokens=self.config.GENERATION_DAFAULT_MAX_TOKENS,
-                default_generation_temperature=self.config.GENERATION_DAFAULT_TEMPERATURE
-            )
+                defaul_generation_temperature=self.config.GENERATION_DAFAULT_TEMPERATURE
+            ) 
 
         if provider == LLMEnums.COHERE.value:
             return CoHereProvider(
@@ -24,4 +24,5 @@ class LLMProviderFactory:
                 defaul_generation_temperature=self.config.GENERATION_DAFAULT_TEMPERATURE
             )
 
-        raise ValueError(f"Unsupported LLM provider: {provider!r}") 
+        return None
+    

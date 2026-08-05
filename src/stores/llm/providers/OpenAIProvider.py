@@ -36,8 +36,11 @@ class OpenAIProvider(LLMInterface):
         self.embedding_model_id = model_id
         self.embedding_size = embedding_size
 
-    def generate_text(self, prompt : str, chat_history : list = [],
+    def generate_text(self, prompt : str, chat_history : list = None,
                        max_output_tokens : int = None, temperature : float = None):
+
+        if chat_history is None:
+            chat_history = []
 
         if not self.client:
             self.logger.error("OpenAI client is not initialized.")
@@ -62,11 +65,11 @@ class OpenAIProvider(LLMInterface):
             temperature=temperature 
         )
 
-        if not response or not response.choices or len(response.choices) == 0 or not response.choices[0].message["content"]:
+        if not response or not response.choices or len(response.choices) == 0 or not response.choices[0].message.content:
             self.logger.error("Error while generating text with OpenAI")
             return None
          
-        return response.choices.message.content
+        return response.choices[0].message.content
 
 
     def embed_text(self, text: str, document_type: str = None):
@@ -95,5 +98,5 @@ class OpenAIProvider(LLMInterface):
     def construct_prompt(self, prompt: str, role: str) -> str:
         return {
             "role": role,
-            "prompt": self.process_text(prompt)
+            "content": self.process_text(prompt)
         }
