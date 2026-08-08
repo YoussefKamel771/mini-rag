@@ -2,6 +2,7 @@ from ..LLMInterface import LLMInterface
 from ..LLMEnums import OpenAIEnums
 from openai import OpenAI
 import logging
+from typing import List, Union
 
 class OpenAIProvider(LLMInterface):
     def __init__(self, api_key: str, api_url: str = None, 
@@ -27,7 +28,7 @@ class OpenAIProvider(LLMInterface):
             base_url=self.api_url if self.api_url and len(self.api_url) else None
         )
 
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("uvicorn")
 
     def set_generation_model(self, model_id : str):
         self.generation_model_id = model_id
@@ -72,7 +73,7 @@ class OpenAIProvider(LLMInterface):
         return response.choices[0].message.content
 
 
-    def embed_text(self, text: str, document_type: str = None):
+    def embed_text(self, text: Union[str, List[str]], document_type: str = None):
         if not self.client:
             self.logger.error("OpenAI client is not initialized.")
             return None
@@ -90,7 +91,7 @@ class OpenAIProvider(LLMInterface):
             self.logger.error("No embedding data returned from OpenAI.")
             return None
 
-        return response.data[0].embedding
+        return [rec.embedding for rec in response.data]
 
     def process_text(self, prompt: str):
         return prompt[:self.default_input_max_characters].strip().lower()
