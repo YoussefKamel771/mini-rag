@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
     )
 
     llm_provider_factory = LLMProviderFactory(settings)
-    vector_db_provider_factory = VectorDBProviderFactory(settings)
+    vector_db_provider_factory = VectorDBProviderFactory(settings, db_client=app.state.db_client)
 
     # generation client
     app.state.generation_client = llm_provider_factory.create(settings.GENERATION_BACKEND)
@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
 
     # Vector DB client
     app.state.vectordb_client = vector_db_provider_factory.create(settings.VECTOR_DB_BACKEND)
-    app.state.vectordb_client.connect()    
+    await app.state.vectordb_client.connect()    
 
     app.state.template_parser = TemplateParser(
         language=settings.PRIMARY_LANG,
@@ -48,8 +48,8 @@ async def lifespan(app: FastAPI):
     yield  # This is where the application "lives" and handles requests
     
     # --- Shutdown Logic ---
-    app.state.db_engine.dispose()
-    app.state.vectordb_client.disconnect()
+    await app.state.db_engine.dispose()
+    await app.state.vectordb_client.disconnect()
 
 
 # 2. Pass the lifespan to the FastAPI constructor
