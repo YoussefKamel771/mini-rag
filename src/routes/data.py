@@ -1,7 +1,7 @@
 from fastapi import FastAPI, APIRouter, Depends, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 from helpers.config import Settings, get_settings
-from controllers import DataController, ProjectController, ProcessController
+from controllers import DataController, ProjectController, ProcessController, NLPController
 from models import ResponseSignal, ProjectModel,  ChunkModel, AssetModel, AssetTypeEnum
 from models.db_schemas import Asset, DataChunk
 from .schemas.data import ProcessRequest
@@ -88,6 +88,13 @@ async def process_data(request: Request, project_id: int, process_request: Proce
 
     asset_model = await AssetModel.create_instance(db_client=request.app.state.db_client)
 
+    nlp_controller = NLPController(
+        vectordb_client=request.app.state.vectordb_client,
+        generation_client=request.app.state.generation_client,
+        embedding_client=request.app.state.embedding_client,
+        template_parser=request.app.state.template_parser,
+    )
+
     project_files_ids = {}
     if process_request.file_id:
         asset_record = await asset_model.get_asset_record(
@@ -130,6 +137,11 @@ async def process_data(request: Request, project_id: int, process_request: Proce
     chunk_model = await ChunkModel.create_instance(db_client=request.app.state.db_client)
     
     if do_reset == 1:
+        # delete associated vectors collection
+        collection_name = nlp_controller.create_collection_name(project_id=project.project_id)
+        _ = await request.app.state.vectordb_client.delete_collection(collection_name=collection_name)
+
+        # delete associated chunks
         _ = await chunk_model.delete_chunks_by_project_id(
             project_id=project.project_id
         )
