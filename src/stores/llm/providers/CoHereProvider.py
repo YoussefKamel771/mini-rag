@@ -2,6 +2,7 @@ from ..LLMInterface import LLMInterface
 from ..LLMEnums import COHEREEnums, DocumentTypeEnums
 import cohere
 import logging
+from typing import List, Union
 
 class CoHereProvider(LLMInterface):
     def __init__(self, api_key: str, 
@@ -23,7 +24,7 @@ class CoHereProvider(LLMInterface):
 
         self.client = cohere.Client(api_key=self.api_key)
 
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("uvicorn")
 
     def set_generation_model(self, model_id : str):
         self.generation_model_id = model_id
@@ -64,10 +65,13 @@ class CoHereProvider(LLMInterface):
              
             return response.text
 
-    def embed_text(self, text: str, document_type: str = None):
+    def embed_text(self, text: Union[str, List[str]], document_type: str = None):
             if not self.client:
                 self.logger.error("Cohere client is not initialized.")
                 return None
+
+            if isinstance(text, str):
+                text = [text]
     
             if not self.embedding_model_id:
                 self.logger.error("Embedding model ID for Cohere is not set.")
@@ -80,28 +84,20 @@ class CoHereProvider(LLMInterface):
     
             response = self.client.embed(
                 model=self.embedding_model_id,
-                texts=[self.process_text(text)],
+                texts=[self.process_text(t) for t in text],
                 input_type=input_type,
                 embedding_types=['float']
             )   
     
-            # if not response or not hasattr(response, "embeddings")  or not response.embeddings.float :
-            #     self.logger.error("No embedding data returned from Cohere.")
-            #     return None
+            if not response or not response.embeddings or not response.embeddings.float:
+                self.logger.error("Error while embedding text with CoHere")
+                return None
     
-            try:
-                float_embeddings = response.embeddings.float
-            except AttributeError:
-                self.logger.error("No embedding data returned from Cohere.")
-                return None
 
-            if not float_embeddings:
-                self.logger.error("No embedding data returned from Cohere.")
-                return None
-            return response.embeddings.float[0]
+            return response.embeddings.float
 
     def construct_prompt(self, prompt: str, role: str):
         return {
             "role": role,
-            "text": self.process_text(prompt)
+            "text": prompt
         }

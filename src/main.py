@@ -6,20 +6,26 @@ from stores import TemplateParser
 from motor.motor_asyncio import AsyncIOMotorClient
 from helpers.config import get_settings
 from contextlib import asynccontextmanager
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 
 # 1. Define the lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # --- Startup Logic ---
     settings = get_settings()
+
+    postgres_conn = f"postgresql+asyncpg://{settings.POSTGRES_USERNAME}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_MAIN_DATABASE}"
     # We attach the client to the app state so it's accessible in routes
-    app.state.mongodb_client = AsyncIOMotorClient(settings.MONGODB_URL)
-    app.state.database = app.state.mongodb_client[settings.MONGODB_DATABASE]
+
+    app.state.db_engine = create_async_engine(postgres_conn)
+    app.state.db_client = sessionmaker(
+        app.state.db_engine, class_=AsyncSession, expire_on_commit=False
+    )
 
     llm_provider_factory = LLMProviderFactory(settings)
-    vector_db_provider_factory = VectorDBProviderFactory(settings)
+    vector_db_provider_factory = VectorDBProviderFactory(settings, db_client=app.state.db_client)
 
-    # print("GENERATION_BACKEND:", repr(settings.GENERATION_BACKEND))
     # generation client
     app.state.generation_client = llm_provider_factory.create(settings.GENERATION_BACKEND)
     app.state.generation_client.set_generation_model(settings.GENERATION_MODEL_ID)
@@ -31,7 +37,7 @@ async def lifespan(app: FastAPI):
 
     # Vector DB client
     app.state.vectordb_client = vector_db_provider_factory.create(settings.VECTOR_DB_BACKEND)
-    app.state.vectordb_client.connect()    
+    await app.state.vectordb_client.connect()    
 
     app.state.template_parser = TemplateParser(
         language=settings.PRIMARY_LANG,
@@ -42,8 +48,8 @@ async def lifespan(app: FastAPI):
     yield  # This is where the application "lives" and handles requests
     
     # --- Shutdown Logic ---
-    app.state.mongodb_client.close()
-    app.state.vectordb_client.disconnect()
+    await app.state.db_engine.dispose()
+    await app.state.vectordb_client.disconnect()
 
 
 # 2. Pass the lifespan to the FastAPI constructor
